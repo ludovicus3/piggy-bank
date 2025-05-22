@@ -1,0 +1,77 @@
+schemaVersion: 2.1.0
+metadata:
+  name: piggy-bank
+  displayName: Piggy Bank
+components:
+  - name: tools
+    container:
+      env:
+        - name: SKIP_TEST_DATABASE
+          value: 'true'
+        - name: POSTGRES_USER
+          value: '{{postgresUser}}'
+        - name: POSTGRES_PASSWORD
+          value: '{{postgresPassword}}'
+        - name: POSTGRES_DATABASE
+          value: '{{postgresDatabase}}'
+        - name: REDIS_URL
+          value: redis://localhost:6379/0
+        - name: RAILS_ENV
+          value: development
+        - name: NODE_ENV
+          value: development
+      endpoints:
+        - exposure: public
+          name: api
+          protocol: https
+          targetPort: 3000
+      image: quay.io/ludovicus/rails-developer-image:ubi9-latest
+      memoryLimit: 3G
+      mountSources: true
+  - name: redis
+    container:
+      endpoints:
+        - exposure: none
+          name: redis
+          targetPort: 6379
+      image: redis:{{redisTag}}
+      command:
+        - redis-server
+      args:
+        - '--appendonly'
+        - 'yes'
+      volumeMounts:
+        - name: cache
+          path: /data
+  - name: postgres
+    container:
+      endpoints:
+        - exposure: none
+          name: postgresql
+          targetPort: 5432
+      env:
+        - name: POSTGRES_DB
+          value: '{{postgresDatabase}}'
+        - name: POSTGRES_USER
+          value: '{{postgresUser}}'
+        - name: POSTGRES_PASSWORD
+          value: '{{postgresPassword}}'
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+      image: postgres:{{postgresTag}}
+      volumeMounts:
+        - name: data
+          path: /var/lib/postgresql/data
+  - name: data
+    volume:
+      size: 2Gi
+  - name: cache
+    volume:
+      size: 1Gi
+variables:
+  postgresTag: latest
+  redisTag: latest
+  postgresDatabase: piggy_bank
+  postgresUser: piggy
+  postgresPassword: aslkeytraklaugf
+
